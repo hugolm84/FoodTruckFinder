@@ -1,0 +1,128 @@
+<com.github.ksoichiro.android.observablescrollview.TouchInterceptionFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/pager_wrapper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/image"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/flexible_space_image_height"
+            android:scaleType="centerCrop"
+            android:src="@drawable/funkychicken" />
+
+        <View
+            android:id="@+id/overlay"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/flexible_space_image_height"
+            android:background="?attr/colorPrimary" />
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:minHeight="?attr/actionBarSize"
+            app:popupTheme="@style/Theme.AppCompat.Light.DarkActionBar"
+            app:theme="@style/Toolbar" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/flexible_space_image_height"
+            android:layout_gravity="bottom">
+
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:minHeight="?attr/actionBarSize"
+                android:layout_alignParentBottom="true"
+                android:ellipsize="end"
+                android:layout_marginBottom="@dimen/tab_height"
+                android:layout_height="@dimen/flexible_space_image_height">
+
+                <TextView
+                    android:id="@+id/title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:text="Bun Bun Truck"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
+                    android:layout_above="@+id/subtitle"
+                    android:layout_alignParentStart="true"
+                    android:paddingLeft="72dp"
+                    android:background="@color/primary_dark"
+                    android:paddingTop="8dp" />
+
+                <TextView
+                    android:id="@+id/subtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:gravity="center_vertical"
+                    android:maxLines="2"
+                    android:text="10:30@Västerlånggatan, Stockholm"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:layout_alignParentBottom="true"
+                    android:paddingBottom="8dp"
+                    android:paddingLeft="72dp"
+                    android:background="@color/primary_dark" />
+
+                <com.melnykov.fab.FloatingActionButton
+                     android:id="@+id/fab"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_alignTop="@+id/title"
+                     android:layout_alignParentStart="true"
+                     android:layout_marginTop="16dp"
+                     android:layout_marginLeft="16dp"
+                     android:scaleType="center"
+                     android:layout_gravity="left|top"
+                     android:src="@drawable/ic_star_rate_black_24dp"
+                     app:fab_type="mini"
+                     app:fab_colorNormal="@color/accent"
+                     app:fab_colorPressed="@color/primary_light"
+                     app:fab_colorRipple="@color/ripple"/>
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/flexible_space_image_height"
+                android:background="@android:color/transparent" />
+
+        </RelativeLayout>
+
+        <com.google.samples.apps.iosched.ui.widget.SlidingTabLayout
+            android:id="@+id/sliding_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tab_height"
+            android:background="@color/primary"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"/>
+
+    </FrameLayout>
+
+</com.github.ksoichiro.android.observablescrollview.TouchInterceptionFrameLayout>
