@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+            android:title="Söktyper"
+            android:key="pref_key_search_types_settings">
+
+        <CheckBoxPreference
+                android:key="pref_key_search_all"
+                android:disableDependentsState="true"
+                android:summary="Sök efter alla typer av bostad"
+                android:title="Söktyper"
+                android:defaultValue="true"/>
+        <CheckBoxPreference
+                android:key="pref_key_search_houses"
+                android:dependency="pref_key_search_all"
+                android:summary="Söker efter villor"
+                android:title="Villa"
+                android:defaultValue="true"/>
+        <CheckBoxPreference
+                android:key="pref_key_search_apartments"
+                android:dependency="pref_key_search_all"
+                android:summary="Söker efter bostadsrätter"
+                android:title="Bostadsrätter"
+                android:defaultValue="true" />
+        <CheckBoxPreference
+                android:key="pref_key_search_cottages"
+                android:dependency="pref_key_search_all"
+                android:summary="Söker efter fritidshus"
+                android:title="Fritidshus"
+                android:defaultValue="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:title="Platsinställningar"
+            android:key="pref_key_location_settings">
+        <CheckBoxPreference
+                android:key="pref_key_location_enabled"
+                android:summary="Tillåt platstjänster och GPS lokalisering"
+                android:title="Tillåt platstjänster"
+                android:defaultValue="true"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Sökresultat"
+        android:key="pref_search_results">
+        <ListPreference
+                android:title="Max antal resultat"
+                android:key="pref_search_max_results"
+                android:entryValues="@array/search_max_results_alias"
+                android:entries="@array/search_max_results_alias"
+                android:summary="Ange maxantalet för sökresultat."
+                android:defaultValue="15"
+                />
+        </PreferenceCategory>
+
+</PreferenceScreen>
