@@ -1,20 +1,22 @@
 package pb.foodtruckfinder;
+import android.app.SearchManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 
 import com.crashlytics.android.Crashlytics;
 import com.mopub.common.MoPub;
@@ -27,30 +29,36 @@ import io.fabric.sdk.android.Fabric;
 import java.util.ArrayList;
 import java.util.List;
 
+import pb.foodtruckfinder.Activity.SettingsPreferenceActivity;
 import pb.foodtruckfinder.Adapter.DividerItemDecoration;
-import pb.foodtruckfinder.Adapter.MoPubAdapter;
 import pb.foodtruckfinder.Adapter.SectionedRecyclerViewAdapter;
 import pb.foodtruckfinder.Adapter.TruckAdapter;
-import pb.foodtruckfinder.Fragment.MainFragment;
+import pb.foodtruckfinder.Fragment.LoginFragment;
 import pb.foodtruckfinder.Fragment.MapFragment;
-import pb.foodtruckfinder.Fragment.PlaceholderFragment;
 import pb.foodtruckfinder.Item.TruckItem;
 
 
 import android.content.Intent;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
     private static final String TWITTER_KEY = "fF9wVi5SLqukKPscQemBmwbZr";
     private static final String TWITTER_SECRET = "FkRhJi5i4PTKnx3cXEtKTA1U4rx3NWA3dNmuwWMuN04kjsYhJy";
+    public final static String CRASHLYTICS_KEY_SESSION_ACTIVATED = "session_activated";
 
 
     private static final String TAG = "MainActivity";
+
+    private static boolean isAuthed = false;
+
+
+    private SearchView.OnQueryTextListener mQueryListener;
+
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle drawerToggle;
-    private PlaceholderFragment placeholderFragment;
+    private LoginFragment loginFragment;
     private MapFragment mMapFragment;
 
 
@@ -77,22 +85,25 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
 
         Log.d(TAG, "OnCreate");
 
         ImageLoaderConfiguration config = ImageLoaderConfiguration.createDefault(this);
         ImageLoader.getInstance().init(config);
 
-                TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
+        super.onCreate(savedInstanceState);
+
+
+        TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
         Fabric.with(this, new Crashlytics(), new Twitter(authConfig), new MoPub());
 
         setContentView(R.layout.main_activity);
 
         if (savedInstanceState == null) {
 
-            placeholderFragment = PlaceholderFragment.newInstance(2);
+            loginFragment = LoginFragment.newInstance(2);
             mMapFragment = new MapFragment();
+            mMapFragment.setCanInteract(false);
 
             getSupportFragmentManager()
                     .beginTransaction()
@@ -100,9 +111,16 @@ public class MainActivity extends ActionBarActivity {
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                     .commit();
 
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.container_overlay, loginFragment)
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                    .commit();
+
         }
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ViewCompat.setElevation(findViewById(R.id.toolbar), getResources().getDimension(R.dimen.toolbar_elevation));
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
 
         if (toolbar != null) {
@@ -136,6 +154,7 @@ public class MainActivity extends ActionBarActivity {
 
         mRecyclerView.setAdapter(mSectionedAdapter);
 
+        toolbar.setVisibility(View.GONE);
 
     }
 
@@ -174,6 +193,12 @@ public class MainActivity extends ActionBarActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
+
+        SearchManager searchManager =
+                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView =
+                (SearchView) menu.findItem(R.id.action_mapsearch).getActionView();
+
         return true;
     }
 
@@ -181,6 +206,9 @@ public class MainActivity extends ActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
+            Intent intent = new Intent();
+            intent.setClass(this, SettingsPreferenceActivity.class);
+            startActivityForResult(intent, 0);
             return true;
         }
         if (drawerToggle.onOptionsItemSelected(item)) {
@@ -193,7 +221,19 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        placeholderFragment.onActivityResult(requestCode, resultCode,
+        loginFragment.onActivityResult(requestCode, resultCode,
                 data);
+    }
+
+    public void onAuthSuccess() {
+        isAuthed = true;
+        toolbar.setVisibility(View.VISIBLE);
+        mMapFragment.setCanInteract(true);
+        getSupportFragmentManager().beginTransaction().remove(loginFragment).commit();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.d(TAG, "SharedPref changed" + key);
     }
 }
