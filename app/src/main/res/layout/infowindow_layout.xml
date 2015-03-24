@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:elevation="2dp"
         android:background="#fff"
-        android:layout_marginRight="56dp">
+        android:layout_marginRight="40dp">
 
         <de.hdodenhof.circleimageview.CircleImageView
             xmlns:app="http://schemas.android.com/apk/res-auto"
