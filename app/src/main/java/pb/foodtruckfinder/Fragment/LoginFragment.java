@@ -143,12 +143,12 @@ public class LoginFragment extends Fragment {
     }
 
 
-    private EditText nameInput, lnameInput;
+    private EditText nameInput, emailInput;
     private View positiveAction;
 
     private void enableAction() {
         final String one = nameInput.getText().toString();
-        final String two = lnameInput.getText().toString();
+        final String two = emailInput.getText().toString();
         positiveAction.setEnabled(one.trim().length() > 0 && two.trim().length() > 0);
     }
 
@@ -162,7 +162,7 @@ public class LoginFragment extends Fragment {
                 .callback(new MaterialDialog.ButtonCallback() {
                     @Override
                     public void onPositive(MaterialDialog dialog) {
-                        Log.d(TAG, nameInput.getText().toString() + " "  + lnameInput.getText().toString());
+                        Log.d(TAG, nameInput.getText().toString() + " "  + emailInput.getText().toString());
                         ((MainActivity)activity).onAuthSuccess(true);
                     }
                     @Override
@@ -174,7 +174,7 @@ public class LoginFragment extends Fragment {
 
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         nameInput = (EditText) dialog.getCustomView().findViewById(R.id.name);
-        lnameInput = (EditText) dialog.getCustomView().findViewById(R.id.lastname);
+        emailInput = (EditText) dialog.getCustomView().findViewById(R.id.email);
 
         nameInput.addTextChangedListener(new TextWatcher() {
             @Override
@@ -191,7 +191,7 @@ public class LoginFragment extends Fragment {
             }
         });
 
-        lnameInput.addTextChangedListener(new TextWatcher() {
+        emailInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
