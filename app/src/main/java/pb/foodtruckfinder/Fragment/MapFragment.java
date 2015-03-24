@@ -5,6 +5,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -123,9 +124,15 @@ public class MapFragment extends android.support.v4.app.Fragment {
         }
     }
 
+    public void setCanInteract(boolean canInteract) {
+        if(map != null)
+            map.getUiSettings().setScrollGesturesEnabled(canInteract);
+    }
+
     private void setUpMap() {
 
         map.setMyLocationEnabled(true);
+        map.getUiSettings().setScrollGesturesEnabled(false);
         map.setInfoWindowAdapter(new MarkerInfoWindowAdapter());
         setCurrentLocation();
 
