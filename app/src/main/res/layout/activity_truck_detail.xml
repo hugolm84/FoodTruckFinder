@@ -72,8 +72,8 @@
                     android:layout_above="@+id/subtitle"
                     android:layout_alignParentStart="true"
                     android:paddingLeft="72dp"
-                    android:background="@color/primary_dark"
-                    android:paddingTop="8dp" />
+                    android:paddingTop="8dp"
+                    android:background="@color/black_transparent"/>
 
                 <TextView
                     android:id="@+id/subtitle"
@@ -88,7 +88,7 @@
                     android:layout_alignParentBottom="true"
                     android:paddingBottom="8dp"
                     android:paddingLeft="72dp"
-                    android:background="@color/primary_dark" />
+                    android:background="@color/black_transparent" />
 
                 <com.melnykov.fab.FloatingActionButton
                      android:id="@+id/fab"
