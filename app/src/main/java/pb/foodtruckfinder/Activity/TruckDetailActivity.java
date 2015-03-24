@@ -8,8 +8,8 @@ import pb.foodtruckfinder.BaseActivity;
 import pb.foodtruckfinder.Fragment.MapFragment;
 import pb.foodtruckfinder.Fragment.ReviewFragment;
 import pb.foodtruckfinder.Fragment.TruckProfileFragment;
+import pb.foodtruckfinder.Fragment.TweetsFragment;
 import pb.foodtruckfinder.Fragment.ViewPagerTab2GridViewFragment;
-import pb.foodtruckfinder.Fragment.ViewPagerTab2ListViewFragment;
 import pb.foodtruckfinder.R;
 
 import android.support.v4.app.Fragment;
@@ -247,7 +247,7 @@ public class TruckDetailActivity extends BaseActivity implements ObservableScrol
                     f = new TruckProfileFragment();
                     break;
                 case 1:
-                    f = new ViewPagerTab2ListViewFragment();
+                    f = new TweetsFragment();
                     break;
                 case 2:
                     f = new ReviewFragment();

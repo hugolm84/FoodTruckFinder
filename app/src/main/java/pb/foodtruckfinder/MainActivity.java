@@ -52,9 +52,6 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
     private static boolean isAuthed = false;
 
-
-    private SearchView.OnQueryTextListener mQueryListener;
-
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle drawerToggle;
