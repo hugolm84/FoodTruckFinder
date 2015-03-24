@@ -13,12 +13,16 @@
         android:id="@+id/drawerLayout"
         android:layout_height="match_parent">
 
-        <FrameLayout
-            android:id="@+id/container"
+        <FrameLayout android:id="@+id/container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
+            android:layout_height="match_parent" >
         </FrameLayout>
+
+        <FrameLayout android:id="@+id/container_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+        </FrameLayout>
+
 
         <!-- navigation drawer -->
         <android.support.v7.widget.RecyclerView
