@@ -24,7 +24,8 @@
         android:text="+46 070-49 15 129"
         android:id="@+id/title"
         android:layout_alignTop="@+id/leftImage"
-        android:layout_toEndOf="@+id/leftImage" />
+        android:layout_toEndOf="@+id/leftImage"
+        android:textSize="16sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -33,7 +34,8 @@
         android:text="Mobile"
         android:id="@+id/subtitle"
         android:layout_alignBottom="@+id/leftImage"
-        android:layout_alignStart="@+id/title" />
+        android:layout_alignStart="@+id/title"
+        android:textSize="12sp" />
 
     <ImageView
         android:layout_width="wrap_content"
@@ -43,7 +45,8 @@
         android:src="@drawable/ic_message_grey600_24dp"
         android:layout_weight="0.07"
         android:layout_centerVertical="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:layout_marginLeft="16dp" />
 
     <ImageView
         android:layout_width="match_parent"

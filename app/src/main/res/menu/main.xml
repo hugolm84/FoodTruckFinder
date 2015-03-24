@@ -1,6 +1,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools" tools:context="pb.foodtruckfinder.MainActivity">
-    <item android:id="@+id/action_settings" android:title="@string/action_settings"
+    <item android:id="@+id/action_mapsearch"
+        android:icon="@drawable/ic_search_white_18dp"
+        android:title="Sök"
+        app:showAsAction="ifRoom|withText"
+        android:actionViewClass="android.widget.SearchView" />
+    <item android:id="@+id/action_account" android:title="@string/action_account"
         android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_settings" android:title="@string/action_settings"
+        android:orderInCategory="90" app:showAsAction="never" />
 </menu>
