@@ -1,13 +1,19 @@
 package pb.foodtruckfinder.Fragment;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.crashlytics.android.Crashlytics;
 import com.digits.sdk.android.AuthCallback;
 import com.digits.sdk.android.DigitsAuthButton;
@@ -15,10 +21,12 @@ import com.digits.sdk.android.DigitsException;
 import com.digits.sdk.android.DigitsSession;
 import com.twitter.sdk.android.core.Callback;
 import com.twitter.sdk.android.core.Result;
+import com.twitter.sdk.android.core.TwitterCore;
 import com.twitter.sdk.android.core.TwitterException;
 import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 
+import android.widget.EditText;
 import android.widget.Toast;
 
 
@@ -32,11 +40,12 @@ import pb.foodtruckfinder.Twitter.SessionRecorder;
 
 public class LoginFragment extends Fragment {
 
+    private static final String TAG = "LoginFragment";
+
     protected static final String ARG_SECTION_NUMBER = "section_number";
 
     private TwitterLoginButton twitterButton;
     private DigitsAuthButton phoneButton;
-
 
     /**
      * Returns a new instance of this fragment for the given section
@@ -71,7 +80,10 @@ public class LoginFragment extends Fragment {
             @Override
             public void success(Result<TwitterSession> result) {
                 SessionRecorder.recordSessionActive("Login: twitter account active", result.data);
-                ((MainActivity)getActivity()).onAuthSuccess();
+                /**
+                 * Get registration dialog if non match in db
+                 */
+                showCustomView();
             }
 
             @Override
@@ -91,7 +103,10 @@ public class LoginFragment extends Fragment {
             @Override
             public void success(DigitsSession digitsSession, String phoneNumber) {
                 SessionRecorder.recordSessionActive("Login: digits account active", digitsSession);
-                ((MainActivity)getActivity()).onAuthSuccess();
+                /**
+                 * Get registration dialog if non match in db
+                 */
+                showCustomView();
             }
 
             @Override
@@ -125,6 +140,75 @@ public class LoginFragment extends Fragment {
         setUpDigitsButton(rootView);
         setUpTwitterButton(rootView);
         return rootView;
+    }
+
+
+    private EditText nameInput, lnameInput;
+    private View positiveAction;
+
+    private void enableAction() {
+        final String one = nameInput.getText().toString();
+        final String two = lnameInput.getText().toString();
+        positiveAction.setEnabled(one.trim().length() > 0 && two.trim().length() > 0);
+    }
+
+    private void showCustomView() {
+        final Activity activity = getActivity();
+        MaterialDialog dialog = new MaterialDialog.Builder(activity)
+                .title("Registrera")
+                .customView(R.layout.dialog_register, true)
+                .positiveText("Fortsätt")
+                .negativeText("Avbryt")
+                .callback(new MaterialDialog.ButtonCallback() {
+                    @Override
+                    public void onPositive(MaterialDialog dialog) {
+                        Log.d(TAG, nameInput.getText().toString() + " "  + lnameInput.getText().toString());
+                        ((MainActivity)activity).onAuthSuccess(true);
+                    }
+                    @Override
+                    public void onNegative(MaterialDialog dialog) {
+                        TwitterCore.getInstance().getSessionManager().clearActiveSession();
+                        ((MainActivity)activity).onAuthSuccess(false);
+                    }
+                }).build();
+
+        positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+        nameInput = (EditText) dialog.getCustomView().findViewById(R.id.name);
+        lnameInput = (EditText) dialog.getCustomView().findViewById(R.id.lastname);
+
+        nameInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                enableAction();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        lnameInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                enableAction();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+
+        dialog.show();
+        positiveAction.setEnabled(false); // disabled by default
     }
 }
 

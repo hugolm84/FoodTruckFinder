@@ -24,7 +24,10 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import com.twitter.sdk.android.Twitter;
+import com.twitter.sdk.android.core.Session;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
+import com.twitter.sdk.android.core.TwitterCore;
+
 import io.fabric.sdk.android.Fabric;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +93,6 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
         super.onCreate(savedInstanceState);
 
-
         TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
         Fabric.with(this, new Crashlytics(), new Twitter(authConfig), new MoPub());
 
@@ -100,20 +102,12 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
             loginFragment = LoginFragment.newInstance(2);
             mMapFragment = new MapFragment();
-            mMapFragment.setCanInteract(false);
 
             getSupportFragmentManager()
                     .beginTransaction()
                     .add(R.id.container, mMapFragment)
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                     .commit();
-
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .add(R.id.container_overlay, loginFragment)
-                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                    .commit();
-
         }
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -124,6 +118,12 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
             toolbar.setTitle(R.string.app_name);
             setSupportActionBar(toolbar);
         }
+
+
+        Session session = TwitterCore.getInstance().getSessionManager().getActiveSession();
+        if(session != null && !session.getAuthToken().isExpired())
+            onAuthSuccess(true);
+        else onAuthSuccess(false);
 
         initDrawer();
 
@@ -150,8 +150,6 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
 
         mRecyclerView.setAdapter(mSectionedAdapter);
-
-        toolbar.setVisibility(View.GONE);
 
     }
 
@@ -208,6 +206,10 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
             startActivityForResult(intent, 0);
             return true;
         }
+        if(id == R.id.action_logout) {
+            TwitterCore.getInstance().getSessionManager().clearActiveSession();
+            onAuthSuccess(false);
+        }
         if (drawerToggle.onOptionsItemSelected(item)) {
             return true;
         }
@@ -222,11 +224,22 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
                 data);
     }
 
-    public void onAuthSuccess() {
-        isAuthed = true;
-        toolbar.setVisibility(View.VISIBLE);
-        mMapFragment.setCanInteract(true);
-        getSupportFragmentManager().beginTransaction().remove(loginFragment).commit();
+    public void onAuthSuccess(boolean success) {
+        isAuthed = success;
+        toolbar.setVisibility((success ? View.VISIBLE : View.GONE));
+
+        mMapFragment.setCanInteract(success);
+
+        if(success)
+            getSupportFragmentManager().beginTransaction().hide(loginFragment).commit();
+        else {
+            loginFragment = LoginFragment.newInstance(2);
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container_overlay, loginFragment)
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                    .commit();
+        }
     }
 
     @Override

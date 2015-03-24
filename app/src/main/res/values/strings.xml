@@ -3,6 +3,7 @@
     <string name="app_name">Project X</string>
     <string name="action_settings">Inställningar</string>
     <string name="action_account">Mitt konto</string>
+    <string name="action_logout">Logga ut</string>
 
     <string name="drawer_open">open</string>
     <string name="drawer_close">close</string>
