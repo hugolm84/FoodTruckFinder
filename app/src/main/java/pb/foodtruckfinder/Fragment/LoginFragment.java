@@ -26,8 +26,8 @@ import com.twitter.sdk.android.core.TwitterSession;
 import com.twitter.sdk.android.core.identity.TwitterLoginButton;
 
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.Toast;
-
 
 import pb.foodtruckfinder.MainActivity;
 import pb.foodtruckfinder.R;
@@ -97,6 +97,7 @@ public class LoginFragment extends Fragment implements SocketSession.SocketAuthC
 
         phoneButton.setCallback(new AuthCallback() {
 
+
             @Override
             public void success(DigitsSession session, String phoneNumber) {
                 mSession.authenticate(phoneNumber, session.getId());
@@ -165,6 +166,7 @@ public class LoginFragment extends Fragment implements SocketSession.SocketAuthC
     }
 
     private EditText nameInput;
+    private RadioGroup imageGroup;
     private View positiveAction;
 
     private void showCustomView(final String identifier, final long id) {
@@ -177,7 +179,22 @@ public class LoginFragment extends Fragment implements SocketSession.SocketAuthC
                 .callback(new MaterialDialog.ButtonCallback() {
                     @Override
                     public void onPositive(MaterialDialog dialog) {
-                        mSession.register(nameInput.getText().toString(), identifier, id);
+
+                        int imageResource;
+                        switch(imageGroup.getCheckedRadioButtonId()) {
+                            default:
+                            case 1:
+                                imageResource = R.id.profile_image;
+                                break;
+                            case 2:
+                                imageResource = R.id.profile_image2;
+                                break;
+                            case 3:
+                                imageResource = R.id.profile_image3;
+                                break;
+
+                        }
+                        mSession.register(nameInput.getText().toString(), imageResource, identifier, id);
                     }
                     @Override
                     public void onNegative(MaterialDialog dialog) {
@@ -188,6 +205,7 @@ public class LoginFragment extends Fragment implements SocketSession.SocketAuthC
 
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         nameInput = (EditText) dialog.getCustomView().findViewById(R.id.name);
+        imageGroup = (RadioGroup) dialog.getCustomView().findViewById(R.id.imageGroup);
 
         nameInput.addTextChangedListener(new TextWatcher() {
             @Override

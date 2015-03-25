@@ -40,7 +40,11 @@ public class SocketSession {
     private SharedPreferences.Editor editor;
 
     private static final String PREF_NAME = "SOCKET_SESSION";
+    private static final String PREF_USERID = "SOCKET_SESSION_ID";
     private static final String PREF_TOKEN = "SOCKET_SESSION_TOKEN";
+    private static final String PREF_USERNAME = "SOCKET_SESSION_NAME";
+    private static final String PREF_USERIMAGE = "SOCKET_SESSION_IMAGE";
+
 
     public static final String SOCKET_URL = "http://10.40.230.72:3000";
     private static final String SOCKET_TOKEN_ENDPOINT = "/token";
@@ -88,6 +92,11 @@ public class SocketSession {
         return token;
     }
 
+    public final int getProfileImage() {
+        final int resource = preferences.getInt(PREF_USERIMAGE, R.drawable.bunbun_prof);
+        return resource;
+    }
+
     public void authenticate(final String identifier, final Long digitsID) {
         SocketTokenTask task = new SocketTokenTask(identifier, digitsID);
         task.execute(SOCKET_URL + SOCKET_TOKEN_ENDPOINT);
@@ -112,13 +121,19 @@ public class SocketSession {
         });
     }
 
-    public void register(final String name, final String identifier, final Long digitsID) {
+    public void register(final String name, final int imageResource, final String identifier, final Long digitsID) {
         SocketRegisterTask task = new SocketRegisterTask(name, identifier, digitsID);
         task.execute(SOCKET_URL + SOCKET_REGISTER_ENDPOINT);
         task.setMyTaskCompleteListener(new AbstractSocketTokenTask.OnTaskComplete() {
             @Override
             public void onAuthSuccess(String token) {
-                registerToken(token);
+
+                editor.putString(PREF_TOKEN, token);
+                editor.putString(PREF_USERNAME, name);
+                editor.putInt(PREF_USERIMAGE, imageResource);
+                editor.putLong(PREF_USERID, digitsID);
+                editor.commit();
+
                 if(registerCallback != null)
                     registerCallback.onRegisterSuccess(token);
             }
