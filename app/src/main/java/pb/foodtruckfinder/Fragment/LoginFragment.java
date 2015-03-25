@@ -2,7 +2,6 @@ package pb.foodtruckfinder.Fragment;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
@@ -32,18 +31,19 @@ import android.widget.Toast;
 
 import pb.foodtruckfinder.MainActivity;
 import pb.foodtruckfinder.R;
-import pb.foodtruckfinder.Twitter.SessionRecorder;
+import pb.foodtruckfinder.Socket.IO.SocketSession;
 
 /**
  * Created by hugo on 20/03/15.
  */
 
-public class LoginFragment extends Fragment {
+public class LoginFragment extends Fragment implements SocketSession.SocketAuthCallback, SocketSession.SocketRegisterCallback {
 
     private static final String TAG = "LoginFragment";
 
     protected static final String ARG_SECTION_NUMBER = "section_number";
 
+    private SocketSession mSession;
     private TwitterLoginButton twitterButton;
     private DigitsAuthButton phoneButton;
 
@@ -63,8 +63,6 @@ public class LoginFragment extends Fragment {
     public LoginFragment() {
     }
 
-
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -79,11 +77,7 @@ public class LoginFragment extends Fragment {
         twitterButton.setCallback(new Callback<TwitterSession>() {
             @Override
             public void success(Result<TwitterSession> result) {
-                SessionRecorder.recordSessionActive("Login: twitter account active", result.data);
-                /**
-                 * Get registration dialog if non match in db
-                 */
-                showCustomView();
+               mSession.authenticate(result.data.getUserName(), result.data.getUserId());
             }
 
             @Override
@@ -97,30 +91,27 @@ public class LoginFragment extends Fragment {
     }
 
     private void setUpDigitsButton(final View view) {
+
         phoneButton = (DigitsAuthButton)view.findViewById(R.id.digits_button);
         phoneButton.setAuthTheme(R.style.AppTheme);
+
         phoneButton.setCallback(new AuthCallback() {
+
             @Override
-            public void success(DigitsSession digitsSession, String phoneNumber) {
-                SessionRecorder.recordSessionActive("Login: digits account active", digitsSession);
-                /**
-                 * Get registration dialog if non match in db
-                 */
-                showCustomView();
+            public void success(DigitsSession session, String phoneNumber) {
+                mSession.authenticate(phoneNumber, session.getId());
             }
 
             @Override
-            public void failure(DigitsException e) {
+            public void failure(DigitsException exception) {
                 Toast.makeText(getActivity(),
                         getResources().getString(R.string.toast_twitter_digits_fail),
                         Toast.LENGTH_SHORT).show();
-                Crashlytics.logException(e);
+                Crashlytics.logException(exception);
+                mSession.authenticate("+460704915129", 3099380872L);
             }
         });
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
-            phoneButton
-                .setAuthTheme(android.R.style.Theme_Material);
     }
 
     @Override
@@ -137,44 +128,66 @@ public class LoginFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        mSession = new SocketSession(getActivity(), this, this);
         setUpDigitsButton(rootView);
         setUpTwitterButton(rootView);
         return rootView;
     }
 
+    @Override
+    public void onAuthSuccess(String token) {
+        Log.d(TAG, "Authenticated! " + token);
+        ((MainActivity)getActivity()).onAuthSuccess();
 
-    private EditText nameInput, emailInput;
-    private View positiveAction;
-
-    private void enableAction() {
-        final String one = nameInput.getText().toString();
-        final String two = emailInput.getText().toString();
-        positiveAction.setEnabled(one.trim().length() > 0 && two.trim().length() > 0);
     }
 
-    private void showCustomView() {
+    @Override
+    public void onAuthFail(Exception e) {
+        Log.d(TAG, "Failed to auth! " + e.getMessage());
+        ((MainActivity)getActivity()).onAuthFailure();
+    }
+
+    @Override
+    public void onNoSuchUser(String identifier, long digitsID) {
+        Log.d(TAG, "No such user!");
+        showCustomView(identifier, digitsID);
+
+    }
+
+    @Override
+    public void onRegisterSuccess(String token) {
+        ((MainActivity)getActivity()).onAuthSuccess();
+    }
+
+    @Override
+    public void onRegisterFail(Exception e) {
+        ((MainActivity)getActivity()).onAuthFailure();
+    }
+
+    private EditText nameInput;
+    private View positiveAction;
+
+    private void showCustomView(final String identifier, final long id) {
         final Activity activity = getActivity();
         MaterialDialog dialog = new MaterialDialog.Builder(activity)
-                .title("Registrera")
+                .title(R.string.dialog_register)
                 .customView(R.layout.dialog_register, true)
-                .positiveText("Fortsätt")
-                .negativeText("Avbryt")
+                .positiveText(R.string.dialog_positive)
+                .negativeText(R.string.dialog_negative)
                 .callback(new MaterialDialog.ButtonCallback() {
                     @Override
                     public void onPositive(MaterialDialog dialog) {
-                        Log.d(TAG, nameInput.getText().toString() + " "  + emailInput.getText().toString());
-                        ((MainActivity)activity).onAuthSuccess(true);
+                        mSession.register(nameInput.getText().toString(), identifier, id);
                     }
                     @Override
                     public void onNegative(MaterialDialog dialog) {
                         TwitterCore.getInstance().getSessionManager().clearActiveSession();
-                        ((MainActivity)activity).onAuthSuccess(false);
+                        ((MainActivity)activity).onAuthFailure();
                     }
                 }).build();
 
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         nameInput = (EditText) dialog.getCustomView().findViewById(R.id.name);
-        emailInput = (EditText) dialog.getCustomView().findViewById(R.id.email);
 
         nameInput.addTextChangedListener(new TextWatcher() {
             @Override
@@ -183,22 +196,7 @@ public class LoginFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                enableAction();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
-
-        emailInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                enableAction();
+                positiveAction.setEnabled(s.toString().trim().length() > 0);
             }
 
             @Override

@@ -1,34 +1,35 @@
 package pb.foodtruckfinder;
-import android.app.SearchManager;
-import android.content.Context;
+
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
+import com.digits.sdk.android.Digits;
 import com.mopub.common.MoPub;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import com.twitter.sdk.android.Twitter;
-import com.twitter.sdk.android.core.Session;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
 import com.twitter.sdk.android.core.TwitterCore;
 
 import io.fabric.sdk.android.Fabric;
+
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,9 +40,8 @@ import pb.foodtruckfinder.Adapter.TruckAdapter;
 import pb.foodtruckfinder.Fragment.LoginFragment;
 import pb.foodtruckfinder.Fragment.MapFragment;
 import pb.foodtruckfinder.Item.TruckItem;
-
-
-import android.content.Intent;
+import pb.foodtruckfinder.Socket.IO.SocketIO;
+import pb.foodtruckfinder.Socket.IO.SocketSession;
 
 public class MainActivity extends ActionBarActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -53,14 +53,14 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
     private static final String TAG = "MainActivity";
 
-    private static boolean isAuthed = false;
-
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle drawerToggle;
     private LoginFragment loginFragment;
     private MapFragment mMapFragment;
 
+    private SocketSession socketSession;
+    private SocketIO socketIO = null;
 
 
     private ArrayList<TruckItem> adapterData = new ArrayList<TruckItem>() {
@@ -100,6 +100,8 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 
         if (savedInstanceState == null) {
 
+            socketSession = new SocketSession(this);
+            socketIO = new SocketIO(this);
             loginFragment = LoginFragment.newInstance(2);
             mMapFragment = new MapFragment();
 
@@ -120,10 +122,11 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
         }
 
 
-        Session session = TwitterCore.getInstance().getSessionManager().getActiveSession();
-        if(session != null && !session.getAuthToken().isExpired())
-            onAuthSuccess(true);
-        else onAuthSuccess(false);
+        if(socketSession != null && !socketSession.getAuthToken().isEmpty()) {
+            onAuthSuccess();
+        } else {
+            onAuthFailure();
+        }
 
         initDrawer();
 
@@ -147,7 +150,6 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
         SectionedRecyclerViewAdapter mSectionedAdapter = new
                 SectionedRecyclerViewAdapter(this,R.layout.section,R.id.section_text,mAdapter);
         mSectionedAdapter.setSections(mSections.toArray(dummy));
-
 
         mRecyclerView.setAdapter(mSectionedAdapter);
 
@@ -188,12 +190,6 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
-
-        SearchManager searchManager =
-                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView =
-                (SearchView) menu.findItem(R.id.action_mapsearch).getActionView();
-
         return true;
     }
 
@@ -207,8 +203,8 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
             return true;
         }
         if(id == R.id.action_logout) {
-            TwitterCore.getInstance().getSessionManager().clearActiveSession();
-            onAuthSuccess(false);
+            unloadSessions();
+            return true;
         }
         if (drawerToggle.onOptionsItemSelected(item)) {
             return true;
@@ -224,10 +220,34 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
                 data);
     }
 
-    public void onAuthSuccess(boolean success) {
-        isAuthed = success;
-        toolbar.setVisibility((success ? View.VISIBLE : View.GONE));
+    private void unloadSessions() {
+        TwitterCore.getInstance().getSessionManager().clearActiveSession();
+        TwitterCore.getInstance().getAppSessionManager().clearActiveSession();
+        Digits.getSessionManager().clearActiveSession();
+        socketSession.logout();
+        socketIO.disconnect();
+        onAuthSuccess(false);
+    }
 
+    private void onAuthToken(final String token) {
+        try {
+            socketIO.connect(token);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void onAuthSuccess() {
+        onAuthSuccess(true);
+        onAuthToken(socketSession.getAuthToken());
+    }
+
+    public void onAuthFailure() {
+        onAuthSuccess(false);
+    }
+
+    private void onAuthSuccess(boolean success) {
+        toolbar.setVisibility((success ? View.VISIBLE : View.GONE));
         mMapFragment.setCanInteract(success);
 
         if(success)

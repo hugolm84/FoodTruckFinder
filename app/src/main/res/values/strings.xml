@@ -5,6 +5,13 @@
     <string name="action_account">Mitt konto</string>
     <string name="action_logout">Logga ut</string>
 
+    <string name="dialog_register">Registrera</string>
+    <string name="dialog_positive">Fortsätt</string>
+    <string name="dialog_negative">Avbryt</string>
+    <string name="dialog_avatar">Profilbild</string>
+    <string name="dialog_name">Namn</string>
+
+
     <string name="drawer_open">open</string>
     <string name="drawer_close">close</string>
     <string name="title_activity_main">MainActivity</string>
