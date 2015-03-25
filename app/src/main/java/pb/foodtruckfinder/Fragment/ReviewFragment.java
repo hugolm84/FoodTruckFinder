@@ -10,8 +10,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.github.ksoichiro.android.observablescrollview.ObservableRecyclerView;
 import com.github.ksoichiro.android.observablescrollview.ObservableScrollView;
 import com.github.ksoichiro.android.observablescrollview.ObservableScrollViewCallbacks;
+import com.melnykov.fab.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +32,7 @@ public class ReviewFragment extends BaseFragment {
 
     private static final String TAG = "ReviewFragment";
 
-    private RecyclerView mRecyclerView;
+    private ObservableRecyclerView mRecyclerView;
 
 
     public static ReviewFragment newInstance() {
@@ -60,26 +62,31 @@ public class ReviewFragment extends BaseFragment {
         };
         ReviewAdapter adapter = new ReviewAdapter(getActivity(), adapterData);
         mRecyclerView.setAdapter(adapter);
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_review, container, false);
-        mRecyclerView = (RecyclerView)view.findViewById(R.id.recycler_view);
+        //mRecyclerView = (RecyclerView)view.findViewById(R.id.recycler_view);
 
 
-        final ObservableScrollView scrollView = (ObservableScrollView) view.findViewById(R.id.scroll);
+        mRecyclerView = (ObservableRecyclerView) view.findViewById(R.id.scroll);
         Fragment parentFragment = getParentFragment();
         if(parentFragment != null) {
             ViewGroup viewGroup = (ViewGroup) parentFragment.getView();
             if (viewGroup != null) {
-                scrollView.setTouchInterceptionViewGroup((ViewGroup) viewGroup.findViewById(R.id.container));
+                mRecyclerView.setTouchInterceptionViewGroup((ViewGroup) viewGroup.findViewById(R.id.container));
                 if (parentFragment instanceof ObservableScrollViewCallbacks) {
-                    scrollView.setScrollViewCallbacks((ObservableScrollViewCallbacks) parentFragment);
+                    mRecyclerView.setScrollViewCallbacks((ObservableScrollViewCallbacks) parentFragment);
                 }
             }
         }
+
+        FloatingActionButton fab = (FloatingActionButton)view.findViewById(R.id.fab);
+        fab.attachToRecyclerView(mRecyclerView);
+
         return view;
     }
 }
