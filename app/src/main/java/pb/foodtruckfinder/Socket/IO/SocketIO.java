@@ -43,6 +43,10 @@ public class SocketIO {
 
     public void connect(final String token) throws URISyntaxException {
 
+        IO.Options options = new IO.Options();
+        options.forceNew = true;
+        options.reconnection = true;
+
         mSocket = IO.socket(mServer);
         mSocket.io().on(Manager.EVENT_TRANSPORT, new Emitter.Listener() {
             @Override
