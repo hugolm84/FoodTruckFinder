@@ -16,13 +16,26 @@ public class LocationHandler extends IntentService {
     public static final String TAG = "LocationHandler";
     public static final String LOC_PARCEL = "LocationHandlerLocation";
 
+    private Location mLastLocation;
+
     public LocationHandler() {
         super(TAG);
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
+
         final Location location = intent.getParcelableExtra(FusedLocationProviderApi.KEY_LOCATION_CHANGED);
+
+        if(mLastLocation != null) {
+            if(location.getLatitude() == mLastLocation.getLatitude()
+                    && location.getLongitude() == mLastLocation.getLongitude()) {
+                return;
+            }
+        }
+
+        mLastLocation = location;
+
         Log.d(TAG, "Got Location: " + location);
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(TAG);
