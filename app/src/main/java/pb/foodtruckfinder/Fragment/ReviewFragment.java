@@ -69,8 +69,6 @@ public class ReviewFragment extends BaseFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_review, container, false);
-        //mRecyclerView = (RecyclerView)view.findViewById(R.id.recycler_view);
-
 
         mRecyclerView = (ObservableRecyclerView) view.findViewById(R.id.scroll);
         Fragment parentFragment = getParentFragment();
