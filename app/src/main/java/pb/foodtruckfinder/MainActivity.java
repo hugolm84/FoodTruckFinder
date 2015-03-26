@@ -1,8 +1,15 @@
 package pb.foodtruckfinder;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.location.Location;
+import android.os.IBinder;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -16,6 +23,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.digits.sdk.android.Digits;
@@ -40,16 +48,20 @@ import pb.foodtruckfinder.Adapter.TruckAdapter;
 import pb.foodtruckfinder.Fragment.LoginFragment;
 import pb.foodtruckfinder.Fragment.MapFragment;
 import pb.foodtruckfinder.Item.TruckItem;
+import pb.foodtruckfinder.Service.GeofenceHandler;
+import pb.foodtruckfinder.Service.LocationHandler;
+import pb.foodtruckfinder.Service.LocationService;
+import pb.foodtruckfinder.Service.MockLocationService;
 import pb.foodtruckfinder.Socket.IO.SocketIO;
 import pb.foodtruckfinder.Socket.IO.SocketSession;
 
-public class MainActivity extends ActionBarActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class MainActivity extends ActionBarActivity implements
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
     private static final String TWITTER_KEY = "fF9wVi5SLqukKPscQemBmwbZr";
     private static final String TWITTER_SECRET = "FkRhJi5i4PTKnx3cXEtKTA1U4rx3NWA3dNmuwWMuN04kjsYhJy";
     public final static String CRASHLYTICS_KEY_SESSION_ACTIVATED = "session_activated";
-
 
     private static final String TAG = "MainActivity";
 
@@ -83,6 +95,60 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
             new ArrayList<SectionedRecyclerViewAdapter.Section>();
     private TruckAdapter mAdapter;
 
+    /**
+     * Services
+     */
+    private ResponseReceiver receiver;
+
+    private LocationService mBackgroundLocationService;
+    private ServiceConnection mLocationManagerConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.i(TAG, "Background location services connected");
+            mBackgroundLocationService = ((LocationService.LocalBinder)service).getService();
+            mBackgroundLocationService.setServiceCallback(new LocationService.ServiceCallback() {
+                @Override
+                public void onConnected() {
+                    Log.d(TAG, "Location services connected!");
+                    mBackgroundLocationService.setupGeofence(mMapFragment.getTrucks());
+                }
+            });
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mBackgroundLocationService = null;
+        }
+    };
+
+    public class ResponseReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "Got intent " + intent.getAction());
+
+            if(intent.getAction().equals(LocationHandler.TAG)) {
+                Location location = intent.getParcelableExtra(LocationHandler.LOC_PARCEL);
+                if (location != null) {
+                    Log.d(TAG, "Got location " + location.toString());
+                    mMapFragment.updateMarker(location);
+                }
+            }
+
+            if(intent.getAction().equals(GeofenceHandler.TAG)) {
+                Log.d(TAG, "Got geofence");
+                final String geoString = intent.getStringExtra(GeofenceHandler.GEO_PARCEL);
+                if (geoString != null && !geoString.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), geoString, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Failed to get Geofence", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -92,6 +158,20 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
         ImageLoader.getInstance().init(config);
 
         super.onCreate(savedInstanceState);
+
+        Intent intent = new Intent(this, MockLocationService.class);
+        bindService(intent, mLocationManagerConnection, Context.BIND_AUTO_CREATE);
+        startService(intent);
+
+        IntentFilter filter = new IntentFilter(LocationHandler.TAG);
+        IntentFilter filter2 = new IntentFilter(GeofenceHandler.TAG);
+        filter.addCategory(Intent.CATEGORY_DEFAULT);
+        filter2.addCategory(Intent.CATEGORY_DEFAULT);
+
+        receiver = new ResponseReceiver();
+        registerReceiver(receiver, filter);
+        registerReceiver(receiver, filter2);
+
 
         TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
         Fabric.with(this, new Crashlytics(), new Twitter(authConfig), new MoPub());
@@ -110,6 +190,7 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
                     .add(R.id.container, mMapFragment)
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                     .commit();
+
         }
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -125,7 +206,10 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
         if(socketSession != null && !socketSession.getAuthToken().isEmpty()) {
             onAuthSuccess();
         } else {
-            onAuthFailure();
+
+            socketSession.registerToken("dummy");
+            onAuthSuccess();
+            //onAuthFailure();
         }
 
         initDrawer();
@@ -266,4 +350,7 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.d(TAG, "SharedPref changed" + key);
     }
+
+
+
 }
