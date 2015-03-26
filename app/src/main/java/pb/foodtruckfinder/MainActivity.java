@@ -1,6 +1,5 @@
 package pb.foodtruckfinder;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.os.IBinder;
+import android.os.Parcel;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -19,6 +19,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.os.Bundle;
+import android.util.JsonWriter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,6 +36,9 @@ import com.twitter.sdk.android.Twitter;
 import com.twitter.sdk.android.core.TwitterAuthConfig;
 import com.twitter.sdk.android.core.TwitterCore;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import io.fabric.sdk.android.Fabric;
 
 import java.net.URISyntaxException;
@@ -48,6 +52,7 @@ import pb.foodtruckfinder.Adapter.TruckAdapter;
 import pb.foodtruckfinder.Fragment.LoginFragment;
 import pb.foodtruckfinder.Fragment.MapFragment;
 import pb.foodtruckfinder.Item.TruckItem;
+import pb.foodtruckfinder.Receiver.LocationReceiver;
 import pb.foodtruckfinder.Service.GeofenceHandler;
 import pb.foodtruckfinder.Service.LocationHandler;
 import pb.foodtruckfinder.Service.LocationService;
@@ -58,6 +63,7 @@ import pb.foodtruckfinder.Socket.IO.SocketSession;
 public class MainActivity extends ActionBarActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener {
 
+    public static final boolean DEBUG = false;
     // Note: Your consumer key and secret should be obfuscated in your source code before shipping.
     private static final String TWITTER_KEY = "fF9wVi5SLqukKPscQemBmwbZr";
     private static final String TWITTER_SECRET = "FkRhJi5i4PTKnx3cXEtKTA1U4rx3NWA3dNmuwWMuN04kjsYhJy";
@@ -98,7 +104,7 @@ public class MainActivity extends ActionBarActivity implements
     /**
      * Services
      */
-    private ResponseReceiver receiver;
+    private LocationReceiver receiver;
 
     private LocationService mBackgroundLocationService;
     private ServiceConnection mLocationManagerConnection = new ServiceConnection() {
@@ -122,32 +128,6 @@ public class MainActivity extends ActionBarActivity implements
         }
     };
 
-    public class ResponseReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "Got intent " + intent.getAction());
-
-            if(intent.getAction().equals(LocationHandler.TAG)) {
-                Location location = intent.getParcelableExtra(LocationHandler.LOC_PARCEL);
-                if (location != null) {
-                    Log.d(TAG, "Got location " + location.toString());
-                    mMapFragment.updateMarker(location);
-                }
-            }
-
-            if(intent.getAction().equals(GeofenceHandler.TAG)) {
-                Log.d(TAG, "Got geofence");
-                final String geoString = intent.getStringExtra(GeofenceHandler.GEO_PARCEL);
-                if (geoString != null && !geoString.isEmpty()) {
-                    Toast.makeText(getApplicationContext(), geoString, Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(getApplicationContext(), "Failed to get Geofence", Toast.LENGTH_LONG).show();
-                }
-            }
-        }
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,24 +139,10 @@ public class MainActivity extends ActionBarActivity implements
 
         super.onCreate(savedInstanceState);
 
-        Intent intent = new Intent(this, MockLocationService.class);
-        bindService(intent, mLocationManagerConnection, Context.BIND_AUTO_CREATE);
-        startService(intent);
-
-        IntentFilter filter = new IntentFilter(LocationHandler.TAG);
-        IntentFilter filter2 = new IntentFilter(GeofenceHandler.TAG);
-        filter.addCategory(Intent.CATEGORY_DEFAULT);
-        filter2.addCategory(Intent.CATEGORY_DEFAULT);
-
-        receiver = new ResponseReceiver();
-        registerReceiver(receiver, filter);
-        registerReceiver(receiver, filter2);
-
+        setContentView(R.layout.main_activity);
 
         TwitterAuthConfig authConfig = new TwitterAuthConfig(TWITTER_KEY, TWITTER_SECRET);
         Fabric.with(this, new Crashlytics(), new Twitter(authConfig), new MoPub());
-
-        setContentView(R.layout.main_activity);
 
         if (savedInstanceState == null) {
 
@@ -207,9 +173,9 @@ public class MainActivity extends ActionBarActivity implements
             onAuthSuccess();
         } else {
 
-            socketSession.registerToken("dummy");
-            onAuthSuccess();
-            //onAuthFailure();
+            //socketSession.registerToken("dummy");
+            //onAuthSuccess();
+            onAuthFailure();
         }
 
         initDrawer();
@@ -310,6 +276,7 @@ public class MainActivity extends ActionBarActivity implements
         Digits.getSessionManager().clearActiveSession();
         socketSession.logout();
         socketIO.disconnect();
+        unregisterReceivers();
         onAuthSuccess(false);
     }
 
@@ -323,6 +290,7 @@ public class MainActivity extends ActionBarActivity implements
 
     public void onAuthSuccess() {
         onAuthSuccess(true);
+        registerReceivers();
         onAuthToken(socketSession.getAuthToken());
     }
 
@@ -346,6 +314,66 @@ public class MainActivity extends ActionBarActivity implements
         }
     }
 
+    private void unregisterReceivers() {
+
+        unbindService(mLocationManagerConnection);
+        unregisterReceiver(receiver);
+
+    }
+
+    private void registerReceivers() {
+        Intent intent;
+        if (DEBUG) {
+            intent = new Intent(this, MockLocationService.class);
+        }
+        else {
+            intent = new Intent(this, LocationService.class);
+        }
+
+        bindService(intent, mLocationManagerConnection, Context.BIND_AUTO_CREATE);
+        startService(intent);
+
+        IntentFilter filter = new IntentFilter(LocationHandler.TAG);
+        IntentFilter filter2 = new IntentFilter(GeofenceHandler.TAG);
+        filter.addCategory(Intent.CATEGORY_DEFAULT);
+        filter2.addCategory(Intent.CATEGORY_DEFAULT);
+
+        receiver = new LocationReceiver();
+        receiver.setReceiverCallback(new LocationReceiver.LocationReceiverCallback() {
+            @Override
+            public void onLocationReceived(Location location) {
+                mMapFragment.updateMarker(location);
+
+                if(!socketIO.isConnected())
+                    return;
+
+                try {
+
+                    JSONObject obj = new JSONObject();
+                    obj.put("lng", location.getLongitude());
+                    obj.put("lat", location.getLatitude());
+                    obj.put("bearing", location.getBearing());
+                    obj.put("speed", location.getSpeed());
+                    obj.put("time", location.getTime());
+
+                        socketIO.send("location", obj);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void onGeofenceReceived(String geoString) {
+                Toast.makeText(getApplication(), geoString, Toast.LENGTH_LONG).show();
+            }
+        });
+
+        registerReceiver(receiver, filter);
+        registerReceiver(receiver, filter2);
+
+    }
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.d(TAG, "SharedPref changed" + key);
