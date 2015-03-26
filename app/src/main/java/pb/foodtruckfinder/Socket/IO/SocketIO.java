@@ -28,6 +28,7 @@ public class SocketIO {
 
     private static String mServer = SocketSession.SOCKET_URL;//"http://10.0.1.43:3000";
 
+    private String uuid;
     private Activity mActivity;
     private Socket mSocket;
     private boolean mConnected = false;
@@ -77,7 +78,7 @@ public class SocketIO {
 
     }
 
-    public boolean isConnect() {
+    public boolean isConnected() {
         return mConnected;
     }
 
@@ -86,7 +87,7 @@ public class SocketIO {
     }
 
     public void send(final String type, final JSONObject msg) {
-        mSocket.emit(type, msg);
+        mSocket.emit(type, msg, uuid);
     }
 
     private Emitter.Listener onConnectError = new Emitter.Listener() {
@@ -107,6 +108,7 @@ public class SocketIO {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    uuid = args[0].toString();
                     Log.d(TAG, "Connected " + args[0].toString());
                     mConnected = true;
                 }
