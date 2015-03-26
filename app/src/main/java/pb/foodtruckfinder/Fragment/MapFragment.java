@@ -1,23 +1,18 @@
 package pb.foodtruckfinder.Fragment;
 
+import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-
-
-import android.content.Context;
-import android.util.Log;
 
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.model.*;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import pb.foodtruckfinder.R;
@@ -25,28 +20,31 @@ import pb.foodtruckfinder.R;
 
 public class MapFragment extends android.support.v4.app.Fragment {
 
+    private final static String TAG = MapFragment.class.getName();
+
     private MapView mMapView;
     private GoogleMap map;
     private Bundle mBundle;
-    private LocationManager locationManager;
-    private LocationListener locationListener;
-    private Marker currentMarker;
 
-    // Stockholm is the default location.
-    static final LatLng STOCKHOLM = new LatLng(59.338092,18.069656);
+    private List<LatLng> routePoints;
+
+    private final float defaultZoomLevel = 14;
 
     private HashMap<String, LatLng> mTrucks = new HashMap<String, LatLng>() {
         {
-            put("Kantarellkungen", new LatLng(59.345061, 18.063060));
-            put("SOOK Streetfood", new LatLng(59.346538, 18.073317));
-            put("Silvias",new LatLng(59.332818, 18.073580));
-            put("Foodtruck Odjuret",new LatLng(59.343947, 18.055620));
-            put("Curbside STHLM", new LatLng(59.343589, 18.063291));
+
+            put("Kantarellkungen", new LatLng(59.338738,18.056576));
+            put("SOOK Streetfood", new LatLng(59.3283175, 18.0598587));
+            put("Silvias",new LatLng(59.3410617,18.0529373));
+            put("Foodtruck Odjuret",new LatLng(59.3325716, 18.068081));
+            put("Curbside STHLM", new LatLng(59.3291642, 18.0644496));
+
         }
     };
 
-    private final static String TAG = MapFragment.class.getName();
-    private final float defaultZoomLevel = 14;
+    public HashMap<String, LatLng> getTrucks() {
+        return mTrucks;
+    }
 
 
     protected static final String ARG_SECTION_NUMBER = "section_number";
@@ -95,32 +93,22 @@ public class MapFragment extends android.support.v4.app.Fragment {
         }
     }
 
-    public class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter
-    {
-        public MarkerInfoWindowAdapter()
-        {
+    public class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+
+        public MarkerInfoWindowAdapter() {
         }
 
         @Override
-        public View getInfoWindow(Marker marker)
-        {
+        public View getInfoWindow(Marker marker) {
 
             // Getting view from the layout file
             View v = getActivity().getLayoutInflater().inflate(R.layout.infowindow_layout, null);
             return v;
-            /*TextView title = (TextView) v.findViewById(R.id.title);
-            title.setText(marker.getTitle());
-
-            TextView address = (TextView) v.findViewById(R.id.distance);
-            address.setText(marker.getSnippet());*/
-            //return null;
         }
 
         @Override
-        public View getInfoContents(Marker marker)
-        {
-            return null;//View v  = getActivity().getLayoutInflater().inflate(R.layout.infowindow_layout, null);
-            //return v;
+        public View getInfoContents(Marker marker) {
+            return null;
         }
     }
 
@@ -129,12 +117,14 @@ public class MapFragment extends android.support.v4.app.Fragment {
             map.getUiSettings().setScrollGesturesEnabled(canInteract);
     }
 
+
     private void setUpMap() {
 
+        routePoints = new ArrayList<>();
         map.setMyLocationEnabled(true);
-        map.getUiSettings().setScrollGesturesEnabled(false);
+        map.getUiSettings().setAllGesturesEnabled(true);
+        map.getUiSettings().setZoomControlsEnabled(true);
         map.setInfoWindowAdapter(new MarkerInfoWindowAdapter());
-        setCurrentLocation();
 
         BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_local_shipping_black_48dp);
 
@@ -147,82 +137,31 @@ public class MapFragment extends android.support.v4.app.Fragment {
                     .snippet("TEST SNIPPET")
                     .draggable(false));
         }
-
-        locationListener = new LocationListener() {
-
-            @Override
-            public void onLocationChanged(Location location) {
-
-            }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-
-            }
-        };
-
-        try {
-
-            if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,locationListener);
-
-            if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-
-        } catch( IllegalArgumentException e) {
-            Log.d(TAG, "No providers available");
-            e.printStackTrace();
-        }
-
     }
 
 
-    public void updateMarker(LatLng point) {
+    public void updateMarker(Location location) {
 
-        if( currentMarker != null ) {
-            currentMarker.remove();
-        }
+        LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
 
-        currentMarker = map.addMarker( new MarkerOptions()
-                        .position(point)
-                        .title("Min plats")
-                        .draggable(true)
-        );
+        if(routePoints.isEmpty())
+            panToPosition(point, defaultZoomLevel);
+        else
+            panToPosition(point);
+
+        routePoints.add(point);
+
+        Polyline route = map.addPolyline(new PolylineOptions()
+                .width(4)
+                .color(Color.BLUE)
+                .geodesic(false)
+                .zIndex(0));
+        route.setPoints(routePoints);
 
 
     }
 
-    private LatLng getCurrentMarkerPosition() {
-        if( currentMarker != null)
-            return currentMarker.getPosition();
-        return new LatLng(0,0);
-    }
-
-    private LatLng getCurrentPosition() {
-        locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
-        Location lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        if(lastLocation == null)
-            lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-        if(lastLocation == null)
-            return STOCKHOLM;
-
-        double lat = lastLocation.getLatitude();
-        double lng = lastLocation.getLongitude();
-        return new LatLng(lat, lng);
-    }
-
-    private void panToPosition(LatLng point) {
+    public void panToPosition(LatLng point) {
         float zoom;
         if(map == null)
             zoom = defaultZoomLevel;
@@ -233,23 +172,14 @@ public class MapFragment extends android.support.v4.app.Fragment {
         map.animateCamera(CameraUpdateFactory.zoomTo(zoom), 500, null);
     }
 
-    private void panToPosition(LatLng point,float zoom) {
+    public void panToPosition(LatLng point,float zoom) {
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, zoom+5));
         map.animateCamera(CameraUpdateFactory.zoomTo(zoom), 500, null);
-    }
-
-    private void setCurrentLocation() {
-        LatLng lastLatLng = getCurrentPosition();
-        updateMarker(lastLatLng);
-        panToPosition(lastLatLng, defaultZoomLevel);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(map != null ) {
-            locationManager.removeUpdates(locationListener);
-        }
     }
 
     @Override
@@ -262,9 +192,6 @@ public class MapFragment extends android.support.v4.app.Fragment {
     public void onPause() {
         super.onPause();
         mMapView.onPause();
-        if(map != null){
-            locationManager.removeUpdates(locationListener);
-        }
     }
 
     @Override
