@@ -3,6 +3,7 @@ package pb.foodtruckfinder.Service;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.location.Location;
 import android.os.Binder;
 import android.os.Bundle;
@@ -51,9 +52,14 @@ public class LocationService extends Service implements
 
     private ServiceCallback mServiceCallback;
     private List<Geofence> mGeofences = new ArrayList<>();
+    private PendingIntent mPendingLocationIntent;
 
-    protected final static long     FASTEST_INTERVAL = 5000L;
-    protected final static long     INTERVAL = 10000L;
+    protected final static long     FASTEST_BG_INTERVAL = 60000*2L; // Two minutes
+    protected final static long     BG_INTERVAL = 60000*10L; // Ten minutes
+
+    protected final static long     FASTEST_INTERVAL = 5000L;//60000L; // One minute
+    protected final static long     INTERVAL = 10000L; //60000*5L; // Five minutes
+
     protected final static float    SMALLEST_DISPLACEMENT = 75.0F;
     protected final static float    GEOFENCE_RADIUS = 100f;
     protected final static long     GEOFENCE_EXPIRATION_IN_HOURS = 12;
@@ -63,13 +69,13 @@ public class LocationService extends Service implements
     protected Socket mSocket;
     protected String uuid;
 
-
     public void setServiceCallback(ServiceCallback callback) {
         mServiceCallback = callback;
     }
 
     public static interface ServiceCallback {
         void onConnected();
+        void onConnectionError(ConnectionResult result);
     }
 
     @Override public IBinder onBind(Intent intent) {
@@ -122,6 +128,10 @@ public class LocationService extends Service implements
         return START_STICKY;
     }
 
+    public void createBackgroundLocationRequest() {
+
+    }
+
     @Override
     public void onConnected(Bundle bundle) {
 
@@ -131,7 +141,7 @@ public class LocationService extends Service implements
                 .setInterval(INTERVAL)
                 .setSmallestDisplacement(SMALLEST_DISPLACEMENT);
 
-        PendingIntent.getService(this, 0,
+        mPendingLocationIntent = PendingIntent.getService(this, 0,
                 new Intent(this, LocationHandler.class),
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -191,7 +201,11 @@ public class LocationService extends Service implements
         Log.d(TAG, "Destroying service");
         if(mSocket != null && mSocket.connected())
             mSocket.disconnect();
-        mGoogleClient.disconnect();
+        if(mGoogleClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, this);
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleClient, mPendingLocationIntent);
+            mGoogleClient.disconnect();
+        }
         super.onDestroy();
     }
 
@@ -203,6 +217,8 @@ public class LocationService extends Service implements
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.d(TAG, "Connection failed!" + connectionResult.toString());
+        if(mServiceCallback != null)
+            mServiceCallback.onConnectionError(connectionResult);
 
     }
 
