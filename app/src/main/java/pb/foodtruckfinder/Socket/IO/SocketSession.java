@@ -46,7 +46,7 @@ public class SocketSession {
     private static final String PREF_USERIMAGE = "SOCKET_SESSION_IMAGE";
 
 
-    public static final String SOCKET_URL = "http://10.0.1.43:3000"; //"http://10.40.230.72:3000";
+    public static final String SOCKET_URL = "http://10.40.230.167:3000";//"http://10.0.1.43:3000"; //"http://10.40.230.72:3000";
     private static final String SOCKET_TOKEN_ENDPOINT = "/token";
     private static final String SOCKET_REGISTER_ENDPOINT = "/register";
 

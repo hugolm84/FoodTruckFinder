@@ -3,11 +3,9 @@ package pb.foodtruckfinder.Service;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.android.gms.location.FusedLocationProviderApi;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofenceStatusCodes;
 import com.google.android.gms.location.GeofencingEvent;

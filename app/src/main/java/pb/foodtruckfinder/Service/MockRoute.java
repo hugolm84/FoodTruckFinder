@@ -22,19 +22,21 @@ public class MockRoute {
 
     private static final String TAG = "MockRoute";
     private Context context;
-    private LinkedList<Location> mLocations = new LinkedList<>();
+    private LinkedList<Location> mMockedRoute;
 
     public MockRoute(Context ctx) {
-
         context = ctx;
-        loadJSONFromAsset();
+        mMockedRoute = readRoute("route");
     }
 
+    public LinkedList<Location> readRoute(final String route) {
+        return loadJSONFromAsset(route, new LinkedList<Location>());
+    }
 
-    public void loadJSONFromAsset() {
+    private LinkedList<Location> loadJSONFromAsset(final String routeID, LinkedList<Location> route) {
         try {
 
-            InputStream is = context.getAssets().open("route.json");
+            InputStream is = context.getAssets().open(routeID + ".json");
 
             int size = is.available();
 
@@ -45,6 +47,7 @@ public class MockRoute {
             is.close();
 
             final String json = new String(buffer, "UTF-8");
+            LinkedList<Location> locations = new LinkedList<>();
 
             JSONObject obj = new JSONObject(json);
             JSONArray coords = obj.getJSONArray("coordinates");
@@ -60,18 +63,20 @@ public class MockRoute {
                 location.setLatitude(lat);
                 location.setLongitude(lng);
                 location.setAccuracy(4);
-                mLocations.add(location);
+                route.add(location);
 
             }
 
         } catch (IOException | JSONException ex) {
             ex.printStackTrace();
         }
+
+        return route;
     }
 
     public Location getNextCoord() {
-        if(!mLocations.isEmpty())
-            return mLocations.removeFirst();
+        if(!mMockedRoute.isEmpty())
+            return mMockedRoute.removeFirst();
         return null;
     }
 }
