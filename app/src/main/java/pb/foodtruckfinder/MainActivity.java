@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -26,6 +27,7 @@ import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.digits.sdk.android.Digits;
+import com.google.android.gms.common.ConnectionResult;
 import com.mopub.common.MoPub;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -110,6 +112,25 @@ public class MainActivity extends ActionBarActivity implements
                     Log.d(TAG, "Location services connected!");
                     //mBackgroundLocationService.setupGeofence(mMapFragment.getTrucks());
                     mBackgroundLocationService.onAuthed(socketSession.getAuthToken());
+                }
+
+                @Override
+                public void onConnectionError(ConnectionResult result) {
+                    if (result.hasResolution()) {
+                        // Google Play services can fix the issue
+                        // e.g. the user needs to enable it, updates to latest version
+                        // or the user needs to grant permissions to it
+                        try {
+                            result.startResolutionForResult(getParent(), 0);
+                        } catch (IntentSender.SendIntentException e) {
+                            // it happens if the resolution intent has been canceled,
+                            // or is no longer able to execute the request
+                            Log.d(TAG, "Failed to start resolution for ConnectionResult");
+                        }
+                    } else {
+                        // Google Play services has no idea how to fix the issue
+                        Log.d(TAG, "Connection error! " + result.getErrorCode());
+                    }
                 }
             });
 
