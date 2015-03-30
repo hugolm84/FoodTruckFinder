@@ -28,17 +28,19 @@ public class MockLocationService extends LocationService {
 
         super.onConnected(bundle);
 
-
         final Runnable r = new Runnable() {
             public void run() {
-                Location loc = route.getNextCoord();
-                if(loc != null) {
-                    long currentTime = System.currentTimeMillis();
-                    long elapsedTimeNanos = SystemClock.elapsedRealtimeNanos();
-                    loc.setElapsedRealtimeNanos(elapsedTimeNanos);
-                    loc.setTime(currentTime);
-                    LocationServices.FusedLocationApi.setMockLocation(mGoogleClient, loc);
-                    handler.postDelayed(this, FASTEST_INTERVAL);
+                if(mGoogleClient.isConnected()) {
+
+                    Location loc = route.getNextCoord();
+                    if (loc != null) {
+                        long currentTime = System.currentTimeMillis();
+                        long elapsedTimeNanos = SystemClock.elapsedRealtimeNanos();
+                        loc.setElapsedRealtimeNanos(elapsedTimeNanos);
+                        loc.setTime(currentTime);
+                        LocationServices.FusedLocationApi.setMockLocation(mGoogleClient, loc);
+                        handler.postDelayed(this, FASTEST_INTERVAL);
+                    }
                 }
             }
         };
